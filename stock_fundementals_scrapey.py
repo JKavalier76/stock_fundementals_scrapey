@@ -236,9 +236,15 @@ def pull_current_ratios(symbol):
 
 def pull_pe_list(symbol_list):
     '''
-    returns dictionary with following structure: 
-    {symbol: [(most_recent_date, most_recent_pe), (yr_ago_date, yr_ago_pe)]}
-    
+    Returns dictionary of up to a year's worth of trailing P/E ratios from quarterly reports.
+    Dictionary has following structure: 
+    {symbol: [(most_recent_date, most_recent_pe), 
+           (prev_date, prev_pe), 
+           (six_mos_date, six_mos_pe), 
+           (nine_mos_date, nine_mos_pe),
+            (yr_ago_date, yr_ago_pe)]]
+      }
+
     '''
 
     dict = {}
