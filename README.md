@@ -4,5 +4,5 @@ stock_fundementals_scrapey
 Currently returns the following for a given list of stock ticker symbols:
 <li> Net Income for two latest available annual Income Statements</li>
 <li> Gross Revenue for two latest available annual Income Statements</li>
-<li> Current Ratios (Current Assets / Current Liabilities) for two latest available annual Balance Sheets</li>
+<li> Current Ratio (Current Assets / Current Liabilities) for two latest available annual Balance Sheets</li>
 <li> Trailing P/E ratios for up to past 12 months of quarterly report and the quarterly report 1-year prior </li>
