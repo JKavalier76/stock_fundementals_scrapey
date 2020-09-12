@@ -10,18 +10,18 @@ stock_fundementals_scrapey
 Functions:
 
 pull_ni_list(symbol_list) 
-#given a list of stock ticker symbols as strings, returns most recent annual Net Income and the previous year's annual net income
+<br>#given a list of stock ticker symbols as strings, returns most recent annual Net Income and the previous year's annual net income
 
 pull_curr_ratio_list(symbol_list):
-#returns two most recent annual current ratio (Current Assets / Current Liabilities) as a dictionary with following structure: 
+<br>#returns two most recent annual current ratio (Current Assets / Current Liabilities) as a dictionary with following structure: 
 #{symbol: [(most_recent_date, most_recent_curr_ratio), (prev_date, prev_curr_ratio)]}
 
 pull_rev_list(symbol_list):
-#returns dictionary with following structure:
+<br>#returns dictionary with following structure:
 #{symbol: [most_recent_annual_rev, prev_yr_annual_rev]}
 
 pull_pe_list(symbol_list):
-#returns dictionary of up to a year's worth of trailing P/E ratios from quarterly reports.
+<br>#returns dictionary of up to a year's worth of trailing P/E ratios from quarterly reports.
 #Dictionary has following structure: 
 #{symbol: [(most_recent_date, most_recent_pe), 
            (prev_date, prev_pe), 
