@@ -7,7 +7,7 @@ stock_fundementals_scrapey
 <li> Current Ratio (Current Assets / Current Liabilities) for two latest available annual Balance Sheets</li>
 <li> Trailing P/E ratios for up to past 12 months of quarterly report and the quarterly report 1-year prior </li>
 
-Functions:
+<br>Functions:
 
 pull_ni_list(symbol_list) 
 <br>#given a list of stock ticker symbols as strings, returns most recent annual Net Income and the previous year's annual net income
