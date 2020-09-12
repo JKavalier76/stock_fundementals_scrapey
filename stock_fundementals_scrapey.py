@@ -64,9 +64,6 @@ def return_zacks_bs_soup(symbol):
     return soup 
 
 
-
-        
-
 def pull_annual_ni(symbol):
     '''
     Pulls Net Income for last two available annual reports from zacks.com
@@ -106,58 +103,60 @@ def pull_annual_ni(symbol):
           
     return most_recent_date, most_recent_ni, prev_yr_date, prev_yr_ni
 
+def clean_pe(soup_str):
+    '''
+    Strips Soup string of everything but the P/E
+    '''
+    try:
+        clean_split = soup_str.split()
+        clean = clean_split[-1].split('>')[-2].split('<')[-2]
+        if clean == '':
+            clean = 1999 #assign very high P/E if stock is unprofitable 
+    except:
+        clean = None
+        
+    return clean    
+
 def pull_pe(symbol):
     '''
-    Pulls Trailing P/E for symbols for most recent quarterly and 1-year old quarterly results
-    If company does not have a report a year ago returns None
+    Pulls Trailing P/E for symbols for most up to 5 past quarterly results
+    If company does not have a report for any of those periods returns None for that period
     '''
- 
+    
     soup = return_yahoo_stats_soup(symbol)
  
-    yr_ago_pe_element = str(soup.select('tr.fi-row:nth-child(3) > td:nth-child(7)'))
-    yr_ago_date_element = str(soup.select('th.Fw\(b\):nth-child(7) > span:nth-child(1)'))
-    
+    #most recent quarter
     most_recent_pe_elem = str(soup.select('tr.fi-row:nth-child(3) > td:nth-child(3)'))
+    most_recent_pe = clean_pe(most_recent_pe_elem)
     most_recent_date_elem = str(soup.select('th.Fw\(b\):nth-child(3) > span:nth-child(1)'))
- 
-    date_available = False
+    most_recent_date = clean_pe_date(most_recent_date_elem)
     
+    #previous quarter
+    prev_pe_elem = str(soup.select('tr.fi-row:nth-child(3) > td:nth-child(4)'))
+    prev_pe = clean_pe(prev_pe_elem)
+    prev_date_elem = str(soup.select('th.Fw\(b\):nth-child(4) > span:nth-child(1)'))
+    prev_date = clean_pe_date(prev_date_elem)
     
-    ## Get year ago quarterly report date
-    try:
-        yr_ago_date = yr_ago_date_element.split('>')[-2].split('<')[-2]
-        date_available = True
-    except IndexError:
-        yr_ago_date = None
-        print("No Yr-Ago data was available for symbol: " + symbol)
-        
-    ## get most recent quarterly report date
-    try:
-        most_recent_date = most_recent_date_elem.split('>')[-2].split('<')[-2]
-        date_available = True
-    except IndexError:
-        most_recent_date = None
-        print("No recent P/E data was available for symbol: " + symbol)   
+    #6 months ago
+    six_mos_pe_elem = str(soup.select('tr.fi-row:nth-child(3) > td:nth-child(5)'))
+    six_mos_pe = clean_pe(six_mos_pe_elem)
+    six_mos_date_elem = str(soup.select('th.Fw\(b\):nth-child(5) > span:nth-child(1)'))
+    six_mos_date = clean_pe_date(six_mos_date_elem)
     
-    ## P/E from quarterly report one  year ago    
-    try:
-        yr_ago_pe_element_split = yr_ago_pe_element.split() #make element a string and split it by blanks
-        yr_ago_pe = yr_ago_pe_element_split[-1].split('>')[-2].split('<')[-2] #finds Price/Earnings in CSS element
-        if yr_ago_pe == '':
-            yr_ago_pe = 1999 #assigns fake very high P/E because company was unprofitable at date
-    except IndexError:
-        yr_ago_pe = None
-        
-    ## P/E from most recent quarterly report 
-    try:
-        most_recent_element_split = most_recent_pe_elem.split() #make element a string and split it by blanks
-        most_recent_pe = most_recent_element_split[-1].split('>')[-2].split('<')[-2] #finds Price/Earnings in CSS element
-        if most_recent_pe == '':
-            most_recent_pe = 999 #assigns fake very high P/E because company was unprofitable at date
-    except IndexError:
-        most_recent_pe = None
-         
-    return most_recent_date, most_recent_pe, yr_ago_date, yr_ago_pe
+    #9 months ago
+    nine_mos_pe_elem = str(soup.select('tr.fi-row:nth-child(3) > td:nth-child(6)'))
+    nine_mos_pe = clean_pe(nine_mos_pe_elem)
+    nine_mos_date_elem = str(soup.select('th.Fw\(b\):nth-child(6) > span:nth-child(1)'))
+    nine_mos_date = clean_pe_date(nine_mos_date_elem)
+    
+    #year agp
+    yr_ago_pe_elem = str(soup.select('tr.fi-row:nth-child(3) > td:nth-child(7)'))
+    yr_ago_pe = clean_pe(yr_ago_pe_elem)
+    yr_ago_date_elem = str(soup.select('th.Fw\(b\):nth-child(7) > span:nth-child(1)'))    
+    yr_ago_date = clean_pe_date(yr_ago_date_elem)
+          
+    return most_recent_date, most_recent_pe, prev_date, prev_pe, six_mos_date, six_mos_pe, \
+            nine_mos_date, nine_mos_pe, yr_ago_date, yr_ago_pe
 
 
 def pull_yahoo_rev(symbol):
@@ -241,14 +240,17 @@ def pull_pe_list(symbol_list):
     {symbol: [(most_recent_date, most_recent_pe), (yr_ago_date, yr_ago_pe)]}
     
     '''
-    
+
     dict = {}
     
     for symbol in symbol_list:
-        most_recent_date, most_recent_pe, prev_yr_date, prev_yr_pe = pull_pe(symbol)
-        dict[symbol] = [(most_recent_date, most_recent_pe), (prev_yr_date, prev_yr_pe)]
+        most_recent_date, most_recent_pe, prev_date, prev_pe, six_mos_date, six_mos_pe, \
+        nine_mos_date, nine_mos_pe, yr_ago_date, yr_ago_pe = pull_pe(symbol)
+        dict[symbol] = [(most_recent_date, most_recent_pe), (prev_date, prev_pe), \
+                        (six_mos_date, six_mos_pe), (nine_mos_date, nine_mos_pe), \
+                        (yr_ago_date, yr_ago_pe)]
     
-    return dict       
+    return dict     
 
 
 def pull_rev_list(symbol_list):
