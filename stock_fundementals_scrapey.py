@@ -4,7 +4,8 @@ import bs4
 def return_yahoo_stats_soup(symbol):
     '''
     Returns Beautiful Soup object for Yahoo Statistics page for given symbol
-    Structure for URL is https://finance.yahoo.com/quote/AMZN/key-statistics where AMZN is symbol passed
+    Structure for URL is https://finance.yahoo.com/quote/AMZN/key-statistics 
+    where AMZN is symbol passed
     '''
     
     url = 'https://finance.yahoo.com/quote/' + symbol + '/key-statistics'
@@ -30,7 +31,7 @@ def return_yahoo_income_soup(symbol):
 
 def return_zacks_soup(symbol):
     '''
-    Returns Beautiful Soup object for Zacks income statements page (ANNUAL reports)
+    Returns Beautiful Soup object for Zacks income statements (ANNUAL reports)
     Structure for URL (for TSLA for example) is
     https://www.zacks.com/stock/quote/AAPL/income-statement
     '''
@@ -75,7 +76,7 @@ def pull_annual_ni(symbol):
     try:
         most_recent_ni = most_recent_ni_elem.split(">")[-2].split("<")[-2]
         if most_recent_ni != '':
-            most_recent_ni += ',000' #add zeros since this site reports in millions instead of thousands
+            most_recent_ni += ',000' #add zeros since this site reports in millions 
     except IndexError:
         most_recent_ni = None
         
@@ -84,7 +85,7 @@ def pull_annual_ni(symbol):
     try:
         prev_yr_ni = prev_yr_ni_elem.split(">")[-2].split("<")[-2]
         if prev_yr_ni != '':
-            prev_yr_ni += ',000' #add zeros since this site reports in millions instead of thousands
+            prev_yr_ni += ',000' #add zeros since this site reports in millions 
     except IndexError:
         prev_yr_ni = None 
         
@@ -120,7 +121,8 @@ def clean_pe(soup_str):
 def pull_pe(symbol):
     '''
     Pulls Trailing P/E for symbols for most up to 5 past quarterly results
-    If company does not have a report for any of those periods returns None for that period
+    If company does not have a report for any of those periods returns None 
+    for that period
     '''
     
     soup = return_yahoo_stats_soup(symbol)
@@ -161,15 +163,15 @@ def pull_pe(symbol):
 
 def pull_yahoo_rev(symbol):
     '''
-    Pulls Revenue from last 2 available Annual Income Statements
-    If company does not have a report a year ago returns None
+    Pulls Revenue from last 3 available Annual Income Statements
+    If company does not have a report a year ago returns 0
     '''
  
     soup = return_yahoo_income_soup(symbol)
     
     most_recent_rev_elem = str(soup.select('.D\(tbrg\) > div:nth-child(1) > div:nth-child(1) > div:nth-child(3) > span:nth-child(1)'))
     prev_yr_rev_elem = str(soup.select('.D\(tbrg\) > div:nth-child(1) > div:nth-child(1) > div:nth-child(4) > span:nth-child(1)'))
-    
+    two_yrs_ago_rev_elem = str(soup.select('.D\(tbrg\) > div:nth-child(1) > div:nth-child(1) > div:nth-child(5) > span:nth-child(1)'))
   
     try:
         last_annual_rev = most_recent_rev_elem.split()[-1].split('>')[-2].split('<')[-2]
@@ -180,14 +182,20 @@ def pull_yahoo_rev(symbol):
         prev_year_rev = prev_yr_rev_elem.split()[-1].split('>')[-2].split('<')[-2]
     except IndexError:
         prev_year_rev = 0       
+        
+    try:
+        two_yrs_ago_rev = two_yrs_ago_rev_elem.split()[-1].split('>')[-2].split('<')[-2]
+    except IndexError:
+        two_yrs_ago_rev = 0   
      
-    return last_annual_rev, prev_year_rev
+    return last_annual_rev, prev_year_rev, two_yrs_ago_rev
 
 
 def transform_ratio_soup(string):
     '''
-    Little module that helps de-clutter code in the Current Ratio function.  Just strips unnecessary CSS
-    text and returns the clean desired string from Zacks.com 
+    Little module that helps de-clutter code in the Current Ratio function.  
+    Just strips unnecessary CSS text and returns the clean desired string 
+    from Zacks.com 
     '''
 
     try:
@@ -236,7 +244,9 @@ def pull_current_ratios(symbol):
 
 def pull_pe_list(symbol_list):
     '''
-    Returns dictionary of up to a year's worth of trailing P/E ratios from quarterly reports.
+    Returns dictionary of up to a year's worth of trailing P/E ratios from 
+    quarterly reports.
+    
     Dictionary has following structure: 
     {symbol: [(most_recent_date, most_recent_pe), 
            (prev_date, prev_pe), 
@@ -268,8 +278,8 @@ def pull_rev_list(symbol_list):
     dict = {}
     
     for symbol in symbol_list:
-        last_annual_rev, prev_yr_annual_rev = pull_yahoo_rev(symbol)
-        dict[symbol] = [last_annual_rev, prev_yr_annual_rev]
+        last_annual_rev, prev_yr_annual_rev, two_yrs_ago_rev = pull_yahoo_rev(symbol)
+        dict[symbol] = [last_annual_rev, prev_yr_annual_rev, two_yrs_ago_rev]
         
     return dict
 
@@ -303,5 +313,7 @@ def pull_ni_list(symbol_list):
         most_recent_date, most_recent_ni, prev_yr_date, prev_yr_ni = pull_annual_ni(symbol)
         dict[symbol] = [(most_recent_date, most_recent_ni), (prev_yr_date, prev_yr_ni)]
     
-    return dict      
+    return dict    
+
+print(pull_curr_ratio_list(['T'])) 
 
