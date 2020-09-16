@@ -315,5 +315,3 @@ def pull_ni_list(symbol_list):
     
     return dict    
 
-print(pull_curr_ratio_list(['T'])) 
-
