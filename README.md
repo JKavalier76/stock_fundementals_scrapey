@@ -3,7 +3,7 @@ stock_fundementals_scrapey
 
 <h4>Contains a number of functions that return the following for one or a list of stock ticker symbols:</h4>
 <li> Net Income for two latest available annual Income Statements</li>
-<li> Gross Revenue for two latest available annual Income Statements</li>
+<li> Gross Revenue for three latest available annual Income Statements</li>
 <li> Current Ratio (Current Assets / Current Liabilities) for two latest available annual Balance Sheets</li>
 <li> Trailing P/E ratios for up to past 12 months of quarterly report and the quarterly report 1-year prior </li>
 
@@ -18,7 +18,7 @@ pull_curr_ratio_list(symbol_list):
 
 pull_rev_list(symbol_list):
 <br>#returns dictionary with following structure:
-#{symbol: [most_recent_annual_rev, prev_yr_annual_rev]}
+#{symbol: [most_recent_annual_rev, prev_yr_annual_rev, two_yrs_ago_rev]}
 
 pull_pe_list(symbol_list):
 <br>#returns dictionary of up to a year's worth of trailing P/E ratios from quarterly reports.
