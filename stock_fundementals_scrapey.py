@@ -1,5 +1,9 @@
 import requests
 import bs4
+from datetime import date, timedelta
+from datetime import datetime
+import yfinance as yf
+
 
 def return_yahoo_stats_soup(symbol):
     '''
@@ -63,46 +67,6 @@ def return_zacks_bs_soup(symbol):
     print('Symbol: ' + symbol + ' | Request status: ' + str(r.status_code))
     soup = bs4.BeautifulSoup(r.text, 'lxml')
     return soup 
-
-
-def pull_annual_ni(symbol):
-    '''
-    Pulls Net Income for last two available annual reports from zacks.com
-    '''
-
-    soup = return_zacks_soup(symbol)
-           
-    most_recent_ni_elem = str(soup.select('#annual_income_statement > table:nth-child(3) > tbody:nth-child(2) > tr:nth-child(15) > td:nth-child(2) > span:nth-child(1) > a:nth-child(1)'))
-    try:
-        most_recent_ni = most_recent_ni_elem.split(">")[-2].split("<")[-2]
-        if most_recent_ni != '':
-            most_recent_ni += ',000' #add zeros since this site reports in millions 
-    except IndexError:
-        most_recent_ni = None
-        
-       
-    prev_yr_ni_elem = str(soup.select('#annual_income_statement > table:nth-child(3) > tbody:nth-child(2) > tr:nth-child(15) > td:nth-child(3) > span:nth-child(1) > a:nth-child(1)'))
-    try:
-        prev_yr_ni = prev_yr_ni_elem.split(">")[-2].split("<")[-2]
-        if prev_yr_ni != '':
-            prev_yr_ni += ',000' #add zeros since this site reports in millions 
-    except IndexError:
-        prev_yr_ni = None 
-        
-    most_recent_date_elem = str(soup.select('#annual_income_statement > table:nth-child(3) > thead:nth-child(1) > tr:nth-child(1) > th:nth-child(2)'))
-    prev_yr_date_elem = str(soup.select('#annual_income_statement > table:nth-child(3) > thead:nth-child(1) > tr:nth-child(1) > th:nth-child(3)'))
-    
-    try:
-        most_recent_date = most_recent_date_elem.split('>')[-2].split('<')[-2]
-    except:
-        most_recent_date = None
-    
-    try:
-        prev_yr_date = prev_yr_date_elem.split('>')[-2].split('<')[-2]
-    except:
-        prev_yr_date = None
-          
-    return most_recent_date, most_recent_ni, prev_yr_date, prev_yr_ni
 
 def clean_pe(soup_str):
     '''
@@ -242,7 +206,61 @@ def pull_current_ratios(symbol):
     return most_recent_date, round(most_recent_curr_ratio, 2), prev_date, round(prev_curr_ratio,2)
 
 
+def pull_annual_rev_and_ni(symbol):
+    '''
+    Pulls Revenue and Net Income for last three available annual reports from 
+    zacks.com
+    '''
+
+    soup = return_zacks_soup(symbol)
+    
+    ni_list = [] #pulls Net Income 
+    for i in range(2,5):
+        ni_elem = str(soup.select('#annual_income_statement > table:nth-child(3) > tbody:nth-child(2) > '\
+                                  'tr:nth-child(15) > td:nth-child(' + str(i) + ') > span:nth-child(1) >'\
+                                  ' a:nth-child(1)'))
+        try:
+            ni = ni_elem.split(">")[-2].split("<")[-2]
+            if ni != '' and ni != 'NA':
+                ni += ',000' #add zeros since this site reports in millions 
+            elif ni == 'NA':
+                ni = None
+        except IndexError:
+            ni = None
+        ni_list.append(ni)
+        
+    date_list = [] #pulls Dates
+    for i in range(2,5):
+        date_elem = str(soup.select('#annual_income_statement > table:nth-child(3) > thead:nth-child(1)'\
+                                    ' > tr:nth-child(1) > th:nth-child(' + str(i) + ')'))
+        try:
+            date = date_elem.split('>')[-2].split('<')[-2]
+        except:
+            date = None
+        date_list.append(date)
+        
+    rev_list = [] #pulls revenue
+    for i in range(2,5):
+        rev_elem = str(soup.select('#annual_income_statement > table:nth-child(3) > tbody:nth-child(2) >'\
+                                   ' tr:nth-child(1) > td:nth-child(' + str(i) + ')'))
+        try:
+            rev = rev_elem.split('>')[-2].split('<')[-2]
+            if rev != '' and rev != 'NA':
+                rev += ',000'
+            elif rev == 'NA':
+                rev = None
+        except:
+            rev = 0 #if no revenue is available returns a zero
+        rev_list.append(rev)
+        
+        z = zip(date_list, rev_list, ni_list)
+        lst = list(z)
+              
+    return lst
+
+
 def pull_pe_list(symbol_list):
+    
     '''
     Returns dictionary of up to a year's worth of trailing P/E ratios from 
     quarterly reports.
@@ -270,9 +288,13 @@ def pull_pe_list(symbol_list):
 
 
 def pull_rev_list(symbol_list):
+   
     '''
     returns dictionary with following structure:
-    {symbol: [most_recent_annual_rev, prev_yr_annual_rev]}
+    {symbol: [last_annual_rev, prev_yr_annual_rev, two_yrs_ago_rev]}
+    
+    Uses Yahoo! Finance Revenue; use only if pull_rev_and_ni_list function
+    (which uses Zacks.com) doesn't return a value
     
     '''
     dict = {}
@@ -285,8 +307,9 @@ def pull_rev_list(symbol_list):
 
 
 def pull_curr_ratio_list(symbol_list):
+    
     '''
-    returns two most recent annualcurrent ratios as a dictionary with following structure: 
+    returns two most recent annual current ratios as a dictionary with following structure: 
     {symbol: [(most_recent_date, most_recent_curr_ratio), (prev_date, prev_curr_ratio)]}
     
     '''
@@ -300,18 +323,75 @@ def pull_curr_ratio_list(symbol_list):
     return dict
 
 
-def pull_ni_list(symbol_list):
-    '''
-    returns Annual Net Income dictionary with following structure: 
-    {symbol: [(most_recent_date, most_recent_ni), (yr_ago_date, yr_ago_ni)]}
+def pull_rev_and_ni_list(symbol_list):
     
     '''
+    returns Annual Revenu and Net Income for last 3 annual reports.
+    Structure is as follows: 
+    {symbol: [(most_recent_date, most_recent_rev, most_recent_ni), 
+              (yr_ago_date, yr_ago_rev, yr_ago_ni), 
+              (2yrs_ago_date, 2yrs_ago_rev, 2yrs_ago_ni)]}
     
+    '''   
     dict = {}
-    
     for symbol in symbol_list:
-        most_recent_date, most_recent_ni, prev_yr_date, prev_yr_ni = pull_annual_ni(symbol)
-        dict[symbol] = [(most_recent_date, most_recent_ni), (prev_yr_date, prev_yr_ni)]
-    
-    return dict    
+        lst = pull_annual_rev_and_ni(symbol)
+        dict[symbol] = lst
+    return dict
 
+
+def fix_date_if_weekend(date_given):
+    
+    '''
+    Checks if date is a Saturday or Sunday.  If it is, it subtracts
+    date to be the previous Friday (one or two days earlier)
+    '''
+    
+    d = date_given.weekday()
+    if d < 5: #date is a weekday
+        return date_given
+    elif d == 5: #Saturday
+        return date_given - timedelta(days = 1)
+    elif d == 6: #Sunday
+        return date_given - timedelta(days = 2)
+    
+def str_to_date(date_string):
+    '''
+    changes date string in format DD/MM/YYYY to proper datetime object
+    '''
+    
+    return datetime.strptime(date_string, '%m/%d/%Y')
+
+
+def get_price_change(symbol, beg_date, days_to_add):
+    
+    '''
+    Returns stock price difference for given symbol between the
+    start_date and date after days_to_add is added to start_date.
+    Assumes dates are given as strings in format MM/DD/YYYY.
+    Returns begining stock price, ending stock price and difference.
+    '''
+    
+    stock = yf.Ticker(symbol)
+    
+    start_date = fix_date_if_weekend(str_to_date(beg_date))
+    end_date = fix_date_if_weekend(start_date + timedelta(days = days_to_add))
+    
+    try:
+        beg_price_df = stock.history(start = start_date, end = start_date + timedelta(days = 1))
+        beg_price = float(beg_price_df['Close'])
+    except:
+        beg_price = None
+    
+    try:
+        end_price_df = stock.history(start = end_date, end = end_date + timedelta(days = 1))
+        end_price = float(end_price_df['Close'])
+    except:
+        end_price = None
+    
+    try:
+        change = end_price / beg_price
+    except TypeError:
+        change = None
+        
+    return beg_price, end_price, change
