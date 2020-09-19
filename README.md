@@ -36,7 +36,7 @@ Returns dictionary as follows:
             (two_yrs_ago_date, two_yrs_ago_rev, two_yrs_ago, ni)}
             
 <br> 
-def get_price_change(symbol, beg_date, days_to_add):
+<br>def get_price_change(symbol, beg_date, days_to_add):
     
 <br>Returns stock price difference for given symbol between the start_date and 
 date after days_to_add is added to start_date.
