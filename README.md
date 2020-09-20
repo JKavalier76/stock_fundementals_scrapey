@@ -29,15 +29,14 @@ pull_pe_list(symbol_list):
   }
 
 <br>
-pull_annual_rev_and_ni(symbol):
+<em>pull_annual_rev_and_ni(symbol):</em>
 <br>Pulls Revenue and Net Income for last three available annual reports from zacks.com
 Returns dictionary as follows:
 {'SYMBOL': (last date, last_rev, last_ni), (prev date, prev_rev, prev_ni), 
             (two_yrs_ago_date, two_yrs_ago_rev, two_yrs_ago, ni)}
             
 <br> 
-<br>def get_price_change(symbol, beg_date, days_to_add):
-    
+<br><em>def get_price_change(symbol, beg_date, days_to_add):</em>
 <br>Returns stock price difference for given symbol between the start_date and 
 date after days_to_add is added to start_date.
 <br>Assumes dates are given as strings in format MM/DD/YYYY.
