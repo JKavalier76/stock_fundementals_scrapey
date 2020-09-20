@@ -10,15 +10,15 @@ stock_fundementals_scrapey
 
 <br>Functions:
 
-pull_curr_ratio_list(symbol_list):
+<b>pull_curr_ratio_list(symbol_list):</b>
 <br>#returns two most recent annual current ratio (Current Assets / Current Liabilities) as a dictionary with following structure: 
 #{symbol: [(most_recent_date, most_recent_curr_ratio), (prev_date, prev_curr_ratio)]}
 
-pull_rev_list(symbol_list):
+<b>pull_rev_list(symbol_list):</b>
 <br>#returns dictionary with following structure:
 #{symbol: [most_recent_annual_rev, prev_yr_annual_rev, two_yrs_ago_rev]}
 
-pull_pe_list(symbol_list):
+<b>pull_pe_list(symbol_list):</b>
 <br>#returns dictionary of up to a year's worth of trailing P/E ratios from quarterly reports.
 #Dictionary has following structure: 
 #{symbol: [(most_recent_date, most_recent_pe), 
@@ -29,14 +29,14 @@ pull_pe_list(symbol_list):
   }
 
 <br>
-<em>pull_annual_rev_and_ni(symbol):</em>
+<b>pull_annual_rev_and_ni(symbol):</b>
 <br>Pulls Revenue and Net Income for last three available annual reports from zacks.com
 Returns dictionary as follows:
 {'SYMBOL': (last date, last_rev, last_ni), (prev date, prev_rev, prev_ni), 
             (two_yrs_ago_date, two_yrs_ago_rev, two_yrs_ago, ni)}
             
 <br> 
-<br><em>def get_price_change(symbol, beg_date, days_to_add):</em>
+<br><b>def get_price_change(symbol, beg_date, days_to_add):</b>
 <br>Returns stock price difference for given symbol between the start_date and 
 date after days_to_add is added to start_date.
 <br>Assumes dates are given as strings in format MM/DD/YYYY.
