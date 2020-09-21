@@ -206,6 +206,21 @@ def pull_current_ratios(symbol):
     return most_recent_date, round(most_recent_curr_ratio, 2), prev_date, round(prev_curr_ratio,2)
 
 
+def strip_commas_and_convert_to_int(str):
+    new = str.replace(',','')
+    return int(new)
+
+
+def str_to_date_yy(date_string):
+    '''
+    changes date string in format DD/MM/YY to proper datetime object
+    NOTE: This is different than "str_to_date" function which looks for date 
+    format DD/MM/YYYY
+    '''
+    
+    return datetime.strptime(date_string, '%m/%d/%y')
+    
+
 def pull_annual_rev_and_ni(symbol):
     '''
     Pulls Revenue and Net Income for last three available annual reports from 
@@ -227,7 +242,7 @@ def pull_annual_rev_and_ni(symbol):
                 ni = None
         except IndexError:
             ni = None
-        ni_list.append(ni)
+        ni_list.append(strip_commas_and_convert_to_int(ni))
         
     date_list = [] #pulls Dates
     for i in range(2,5):
@@ -237,7 +252,7 @@ def pull_annual_rev_and_ni(symbol):
             date = date_elem.split('>')[-2].split('<')[-2]
         except:
             date = None
-        date_list.append(date)
+        date_list.append(str_to_date_yy(date))
         
     rev_list = [] #pulls revenue
     for i in range(2,5):
@@ -251,7 +266,7 @@ def pull_annual_rev_and_ni(symbol):
                 rev = None
         except:
             rev = 0 #if no revenue is available returns a zero
-        rev_list.append(rev)
+        rev_list.append(strip_commas_and_convert_to_int(rev))
         
         z = zip(date_list, rev_list, ni_list)
         lst = list(z)
@@ -358,6 +373,8 @@ def fix_date_if_weekend(date_given):
 def str_to_date(date_string):
     '''
     changes date string in format DD/MM/YYYY to proper datetime object
+    NOTE: this is different than previous function called str_to_date_yy which
+    looks for strings in the format DD/MM/YY
     '''
     
     return datetime.strptime(date_string, '%m/%d/%Y')
