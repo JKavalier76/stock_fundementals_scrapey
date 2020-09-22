@@ -82,6 +82,27 @@ def clean_pe(soup_str):
         
     return clean    
 
+def clean_pe_date(date_elem):
+    '''
+    Parameters
+    ----------
+    soup_elem : string version of a soup element
+
+    Returns
+    -------
+    just the date string in format MM/DD/YYYY
+
+    '''
+    try:
+        first_split = date_elem.split()[-1]
+        second_split = first_split.split('>')
+        third_split = second_split[-2].split('<')
+        date_str = third_split[-2]
+        return date_str
+    except:
+        return None
+    
+
 def pull_pe(symbol):
     '''
     Pulls Trailing P/E for symbols for most up to 5 past quarterly results
