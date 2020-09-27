@@ -3,6 +3,7 @@ import bs4
 from datetime import date, timedelta
 from datetime import datetime
 import yfinance as yf
+import time
 
 
 def return_yahoo_stats_soup(symbol):
@@ -68,9 +69,26 @@ def return_zacks_bs_soup(symbol):
     soup = bs4.BeautifulSoup(r.text, 'lxml')
     return soup 
 
+
+def return_macrotrends_soup(symbol):
+    '''
+    Returns Beautiful Soup object for Macrotrends.net page (to pull P/E symbols)
+    for given symbol.
+    
+    Structure for URL for stock ticker GOOG is:
+    https://www.macrotrends.net/stocks/charts/GOOG/xxx/pe-ratio (the 'xxx doesnt matter')
+    '''
+    
+    url = 'https://www.macrotrends.net/stocks/charts/' + symbol + '/xxx/pe-ratio'
+    r= requests.get(url)
+    print('Symbol: ' + symbol + ' | HTTP Request status: ' + str(r.status_code))
+    soup = bs4.BeautifulSoup(r.text, 'lxml')
+    return soup 
+
+
 def clean_pe(soup_str):
     '''
-    Strips Soup string of everything but the P/E
+    Strips Yahoo Stats Soup string of everything but the P/E
     '''
     try:
         clean_split = soup_str.split()
@@ -86,7 +104,7 @@ def clean_pe_date(date_elem):
     '''
     Parameters
     ----------
-    soup_elem : string version of a soup element
+    soup_elem : string version of a Yahoo Stats soup element
 
     Returns
     -------
@@ -106,6 +124,7 @@ def clean_pe_date(date_elem):
 def pull_pe(symbol):
     '''
     Pulls Trailing P/E for symbols for most up to 5 past quarterly results
+    using Yahoo Stats page
     If company does not have a report for any of those periods returns None 
     for that period
     '''
@@ -148,7 +167,8 @@ def pull_pe(symbol):
 
 def pull_yahoo_rev(symbol):
     '''
-    Pulls Revenue from last 3 available Annual Income Statements
+    Pulls Revenue from last 3 available Annual Income Statements from 
+    Yahoo Finance
     If company does not have a report a year ago returns 0
     '''
  
@@ -294,12 +314,70 @@ def pull_annual_rev_and_ni(symbol):
               
     return lst
 
+def clean_elem(elem):
+    '''
+    If element is not empty, strips everything from string elem except the desired data.
+    
+    Function is used by pull_pe_and_ep function to pull data from macrotrends.net
+    '''
+    try:
+        clean = elem.split()[-1].split('>')[-2].split('<')[-2] 
+    except:
+        clean = None
+    return clean 
 
-def pull_pe_list(symbol_list):
+
+def remove_dollar_sign(str):
+    return str.replace('$','')
+
+
+def change_date_format(date_str):
+    '''
+    Changes date format of macrotrends.net to match that of other data pulls
+    Example: Takes a string '2020-06-30' and returns '6/30/2020'
+    '''
+    year, month, day = date_str.split('-')
+    return month + '/' + day + '/' + year
+
+
+def pull_pe_and_ep(symbol):
+    '''
+    Given a ticker symbol, returns 7 most recent quarters of info as a 
+    list of lists formatted as folows:
+    [date, price, EPS, P/E, E/P]
+    
+    Uses macrotrends.net for source data
     
     '''
+    soup = return_macrotrends_soup(symbol)
+    all_dates = []
+    for i in range(2, 9):
+        data = []
+        for j in range(1, 4):
+            elem = str(soup.select('#style-1 > table:nth-child(1) > tbody:nth-child(3)'\
+                                   ' > tr:nth-child(' + str(i) + ') > td:nth-child('\
+                                   + str(j) + ')'))
+            clean = clean_elem(elem)
+            data.append(clean)
+        if clean != None:
+            data.append(float(data[1]) / float(remove_dollar_sign(data[2]))) # Calculates P/E
+            data.append(float(remove_dollar_sign(data[2])) / float(data[1])) # Calculates E/P
+            all_dates.append(data)
+        
+    for x in all_dates: #converts date format of macrotrends to match other data sources
+        x[0] = change_date_format(x[0])
+            
+    return all_dates
+
+def pull_yahoo_pe_list(symbol_list):
+    
+    '''
+    Preference is to use new pull_pe_list function before using this one.
+    
     Returns dictionary of up to a year's worth of trailing P/E ratios from 
     quarterly reports.
+    
+    Uses Yahoo! Stats page
     
     Dictionary has following structure: 
     {symbol: [(most_recent_date, most_recent_pe), 
@@ -345,7 +423,8 @@ def pull_rev_list(symbol_list):
 def pull_curr_ratio_list(symbol_list):
     
     '''
-    returns two most recent annual current ratios as a dictionary with following structure: 
+    returns two most recent annual current ratios as a dictionary with 
+    following structure: 
     {symbol: [(most_recent_date, most_recent_curr_ratio), (prev_date, prev_curr_ratio)]}
     
     '''
@@ -374,6 +453,35 @@ def pull_rev_and_ni_list(symbol_list):
         lst = pull_annual_rev_and_ni(symbol)
         dict[symbol] = lst
     return dict
+
+
+
+def pull_pe_list(stocks):
+    '''
+    
+    Parameters
+    ----------
+    stocks : a list of stock tickers 
+
+    Returns
+    -------
+    dict : {stock name: [[date, stock price, EPS, P/E, E/P]]}.
+    
+    NOTE: list of lists for each stock ticker includes 7 most recent quarterly
+    results for price, EPS, P/E and E/P
+
+    '''
+         
+    dict = {}
+    count = 0 
+    for stock in stocks:
+        count += 1
+        dict[stock] = pull_pe_and_ep(stock)
+        if count == 10: # after 10 pulls, waits 4 seconds before resuming
+            print("...10 pulls complete, pausing for 5 seconds...")
+            time.sleep(5)
+            count = 0 
+    return dict 
 
 
 def fix_date_if_weekend(date_given):
@@ -406,6 +514,7 @@ def get_price_change(symbol, beg_date, days_to_add):
     '''
     Returns stock price difference for given symbol between the
     start_date and date after days_to_add is added to start_date.
+    Uses Yahoo Finance library. 
     Assumes dates are given as strings in format MM/DD/YYYY.
     Returns begining stock price, ending stock price and difference.
     '''
